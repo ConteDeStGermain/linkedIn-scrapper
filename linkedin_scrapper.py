@@ -53,7 +53,24 @@ def load_cookies(sb):
   with open("cookies.json", "r") as file:
     cookies = json.load(file)
     for cookie in cookies:
+      # Check for the specific cookie name and modify its value
+      if cookie["name"] == "new_cookie":
+        cookie["value"] = "modified_cookie"
+        sb.driver.delete_cookie(cookie["name"])
+      
+      # Add the cookie to the driver
       sb.driver.add_cookie(cookie)
+
+def confirm_to_continue():
+  while True:
+    user_input = input("Proceed? (y/n): ").strip().lower()
+    if user_input == 'y':
+      break
+    elif user_input == 'n':
+      print("Exiting.")
+      exit()
+    else:
+      print("Invalid input. Please enter 'y' or 'n'.")
 
 
 def scrape_linkedin_data(url):  
@@ -62,7 +79,7 @@ def scrape_linkedin_data(url):
       if os.path.exists("cookies.json"):
         sb.driver.get('https://www.linkedin.com')
         load_cookies(sb)
-        sb.sleep(1)
+        sb.sleep(3)
       else:
         raise FileNotFoundError
     except FileNotFoundError:
@@ -70,7 +87,6 @@ def scrape_linkedin_data(url):
 
 
     sb.driver.get(url)
-    
 
     emailField = "input[aria-label^='Email or Phone']"
     passwordField = "input[aria-label^='Password']"
@@ -86,9 +102,9 @@ def scrape_linkedin_data(url):
 
       sb.wait_for_element_clickable(signInBtn)
       sb.click(signInBtn)
-      sb.sleep(5)  # Wait for login to complete
-
+      confirm_to_continue()
       save_cookies(sb)
+
     elif sb.is_element_visible(passwordField):
       sb.wait_for_element_visible(passwordField)
       sb.click(passwordField)
@@ -96,11 +112,11 @@ def scrape_linkedin_data(url):
 
       sb.wait_for_element_clickable(signInBtn)
       sb.click(signInBtn)
-      sb.sleep(5)  # Wait for login to complete
-
+      confirm_to_continue()
       save_cookies(sb)
-    else: 
-      sb.sleep(5)
+
+
+    sb.sleep(3)
 
     showAllFollowersButton = "//button[contains(., 'Show all followers')]"
     sb.wait_for_element_visible(showAllFollowersButton, timeout=200)
@@ -169,7 +185,7 @@ def scrape_linkedin_data(url):
 
 
 
-
-url = "https://www.linkedin.com/company/89752477/admin/analytics/followers/"
+url = "https://www.linkedin.com/company/18668697/admin/analytics/followers/"
+# url = "https://www.linkedin.com/company/89752477/admin/analytics/followers/"
 
 scrape_linkedin_data(url)
