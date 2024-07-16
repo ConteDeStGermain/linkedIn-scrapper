@@ -185,7 +185,6 @@ def scrape_linkedin_data(url):
 
 
 
-url = "https://www.linkedin.com/company/18668697/admin/analytics/followers/"
-# url = "https://www.linkedin.com/company/89752477/admin/analytics/followers/"
+url = "https://www.linkedin.com/company/89752477/admin/analytics/followers/"
 
 scrape_linkedin_data(url)
