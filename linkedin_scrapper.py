@@ -7,6 +7,7 @@ import requests
 import os
 from dotenv import load_dotenv
 import pytest
+import json
 
 load_dotenv()
 
@@ -37,45 +38,70 @@ def wait_for_internet_connection():
     time.sleep(5)
   print("Internet connection restored. Resuming...")
 
-    
+def save_cookies(sb):
+  cookies = sb.driver.get_cookies()
+  for cookie in cookies:
+    if "httpOnly" in cookie:
+      cookie["httpOnly"] = bool(cookie["httpOnly"])
+    if "secure" in cookie:
+      cookie["secure"] = bool(cookie["secure"])
+
+  with open("cookies.json", "w") as file:
+    json.dump(cookies, file, indent=2)
+
+def load_cookies(sb):
+  with open("cookies.json", "r") as file:
+    cookies = json.load(file)
+    for cookie in cookies:
+      sb.driver.add_cookie(cookie)
+
+
 def scrape_linkedin_data(url):  
   with SB(uc=True, demo=True) as sb:
-    sb.driver.get(url)
-
     try:
-      sb.load_cookies(name="cookies.txt")
-      sb.driver.refresh()
-    except:
-      print("no cookie found yet")
+      if os.path.exists("cookies.json"):
+        sb.driver.get('https://www.linkedin.com')
+        load_cookies(sb)
+        sb.sleep(1)
+      else:
+        raise FileNotFoundError
+    except FileNotFoundError:
+      print("No cookie found yet")
+
+
+    sb.driver.get(url)
+    
 
     emailField = "input[aria-label^='Email or Phone']"
+    passwordField = "input[aria-label^='Password']"
+    signInBtn = "button[aria-label='Sign in']"
+
     if sb.is_element_visible(emailField):
       sb.click(emailField)
       sb.type(emailField, email)
 
-      passwordField = "input[aria-label^='Password']"
       sb.wait_for_element_visible(passwordField)
       sb.click(passwordField)
       sb.type(passwordField, password)
 
-      signInBtn = "button[aria-label='Sign in']"
       sb.wait_for_element_clickable(signInBtn)
       sb.click(signInBtn)
       sb.sleep(5)  # Wait for login to complete
-      sb.save_cookies(name="cookies.txt")
-    else:
-      passwordField = "input[aria-label^='Password']"
+
+      save_cookies(sb)
+    elif sb.is_element_visible(passwordField):
       sb.wait_for_element_visible(passwordField)
       sb.click(passwordField)
       sb.type(passwordField, password)
 
-      signInBtn = "button[aria-label='Sign in']"
       sb.wait_for_element_clickable(signInBtn)
       sb.click(signInBtn)
       sb.sleep(5)  # Wait for login to complete
-      sb.save_cookies(name="cookies.txt")
-      
-    
+
+      save_cookies(sb)
+    else: 
+      sb.sleep(5)
+
     showAllFollowersButton = "//button[contains(., 'Show all followers')]"
     sb.wait_for_element_visible(showAllFollowersButton, timeout=200)
     sb.scroll_to(showAllFollowersButton)
@@ -142,7 +168,7 @@ def scrape_linkedin_data(url):
 
 
 
-urls = ["https://www.linkedin.com/company/89752477/admin/analytics/followers/"]
-@pytest.mark.parametrize("url", urls)
-def test_multi_threaded(url):
-  scrape_linkedin_data(url)
+
+url = "https://www.linkedin.com/company/89752477/admin/analytics/followers/"
+
+scrape_linkedin_data(url)
